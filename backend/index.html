@@ -23,7 +23,7 @@
 
     <div id="poll-container">
         <div id="options-wrapper">
-            
+            <!-- Poll options will be dynamically inserted here -->
         </div>
         <p id="status">Loading poll...</p>
     </div>
@@ -40,7 +40,7 @@
                 
                 const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
                 
-                optionsWrapper.innerHTML = ''; 
+                optionsWrapper.innerHTML = ''; // Clear previous options
                 
                 options.forEach(option => {
                     const percentage = totalVotes === 0 ? 0 : ((option.votes / totalVotes) * 100).toFixed(1);
@@ -62,25 +62,26 @@
             }
         }
 
-     
+        // Use event delegation for vote buttons
         optionsWrapper.addEventListener('click', async (e) => {
             if (e.target.classList.contains('vote-button')) {
                 const button = e.target;
                 const id = button.dataset.id;
-                button.disabled = true; 
+                button.disabled = true; // Prevent double-clicking
                 statusDiv.textContent = 'Casting vote...';
 
                 try {
                     await fetch(`/vote/${id}`, { method: 'POST' });
-                    await fetchPollData(); 
+                    await fetchPollData(); // Refresh data after voting
                 } catch (error) {
                     statusDiv.textContent = 'Failed to cast vote.';
                     console.error('Error voting:', error);
-                    button.disabled = false; 
+                    button.disabled = false; // Re-enable button on failure
                 }
             }
         });
 
+        // Initial load
         fetchPollData();
     </script>
 
