@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Docker Poll</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f0f2f5; color: #1c1e21; }
+        h1 { text-align: center; color: #0d6efd; }
+        #poll-container { background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; }
+        .poll-option { margin-bottom: 15px; }
+        .poll-option label { font-weight: bold; display: block; margin-bottom: 5px; }
+        .bar-container { display: flex; align-items: center; }
+        .bar { height: 28px; background-color: #0d6efd; color: white; text-align: right; padding-right: 10px; line-height: 28px; border-radius: 5px; white-space: nowrap; transition: width 0.5s ease-in-out; }
+        .vote-button { margin-left: 10px; padding: 5px 15px; border: none; background-color: #28a745; color: white; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .vote-button:hover { background-color: #218838; }
+        #status { text-align: center; margin-top: 20px; font-style: italic; color: #606770; }
+    </style>
+</head>
+<body>
+
+    <h1>What is your favorite programming language?</h1>
+
+    <div id="poll-container">
+        <div id="options-wrapper">
+            <!-- Poll options will be dynamically inserted here -->
+        </div>
+        <p id="status">Loading poll...</p>
+    </div>
+
+    <script>
+        const optionsWrapper = document.getElementById('options-wrapper');
+        const statusDiv = document.getElementById('status');
+
+        async function fetchPollData() {
+            statusDiv.textContent = 'Fetching latest results...';
+            try {
+                const response = await fetch('/poll');
+                const options = await response.json();
+                
+                const totalVotes = options.reduce((sum, option) => sum + option.votes, 0);
+                
+                optionsWrapper.innerHTML = ''; // Clear previous options
+                
+                options.forEach(option => {
+                    const percentage = totalVotes === 0 ? 0 : ((option.votes / totalVotes) * 100).toFixed(1);
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'poll-option';
+                    optionElement.innerHTML = `
+                        <label>${option.name} (${option.votes} votes)</label>
+                        <div class="bar-container">
+                            <div class="bar" style="width: ${percentage}%;">${percentage}%</div>
+                            <button class="vote-button" data-id="${option.id}">Vote</button>
+                        </div>
+                    `;
+                    optionsWrapper.appendChild(optionElement);
+                });
+                statusDiv.textContent = `Total Votes: ${totalVotes}`;
+            } catch (error) {
+                statusDiv.textContent = 'Could not load poll data.';
+                console.error('Error fetching poll:', error);
+            }
+        }
+
+        // Use event delegation for vote buttons
+        optionsWrapper.addEventListener('click', async (e) => {
+            if (e.target.classList.contains('vote-button')) {
+                const button = e.target;
+                const id = button.dataset.id;
+                button.disabled = true; // Prevent double-clicking
+                statusDiv.textContent = 'Casting vote...';
+
+                try {
+                    await fetch(`/vote/${id}`, { method: 'POST' });
+                    await fetchPollData(); // Refresh data after voting
+                } catch (error) {
+                    statusDiv.textContent = 'Failed to cast vote.';
+                    console.error('Error voting:', error);
+                    button.disabled = false; // Re-enable button on failure
+                }
+            }
+        });
+
+        // Initial load
+        fetchPollData();
+    </script>
+
+</body>
+</html>

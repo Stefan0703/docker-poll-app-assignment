@@ -1,0 +1,32 @@
+services:
+  # Our custom Node.js backend service
+  poll-app:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=poll-db
+      - DB_USER=poll_user
+      - DB_PASSWORD=a_strong_password
+      - DB_NAME=polldb
+    depends_on:
+      - poll-db
+
+  # The MySQL database service
+  poll-db:
+    image: mysql:8.0
+    cap_add:
+      - SYS_NICE
+    restart: always
+    environment:
+      - MYSQL_DATABASE=polldb
+      - MYSQL_USER=poll_user
+      - MYSQL_PASSWORD=a_strong_password
+      - MYSQL_ROOT_PASSWORD=a_very_strong_root_password
+    volumes:
+      # Use a named volume to persist database data
+      - poll-db-data:/var/lib/mysql
+
+# Define the named volume
+volumes:
+  poll-db-data:
