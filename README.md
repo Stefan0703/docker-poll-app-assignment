@@ -129,5 +129,5 @@ http://localhost:3000
 
 docker compose down --volumes
 ```
---volumes е важно – премахва volume-а poll-db-data, за да се инициализира базата отначало при следващ старт.
+- volumes е важно – премахва volume-а poll-db-data, за да се инициализира базата отначало при следващ старт.
 
