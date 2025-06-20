@@ -4,9 +4,6 @@ const path = require('path');
 
 const app = express();
 const PORT = 3000;
-
-// --- Database Configuration ---
-// Using environment variables for security and flexibility
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -19,18 +16,14 @@ const dbConfig = {
 
 let pool;
 
-// --- Database Initialization ---
-// Includes retry logic and initial data seeding
 async function initializeDatabase() {
     console.log("Attempting to connect to database...");
-    // Retry connection for Docker Compose startup timing
     for (let i = 0; i < 10; i++) {
         try {
             pool = mysql.createPool(dbConfig);
             const connection = await pool.getConnection();
             console.log("Successfully connected to the database.");
 
-            // Create the 'polls' table if it doesn't exist
             await connection.query(`
                 CREATE TABLE IF NOT EXISTS polls (
                     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -40,7 +33,6 @@ async function initializeDatabase() {
             `);
             console.log("Table 'polls' is ready.");
 
-            // Seed the database with initial poll options if the table is empty
             const [rows] = await connection.query('SELECT COUNT(*) as count FROM polls');
             if (rows[0].count === 0) {
                 console.log("Seeding database with initial poll options...");
@@ -51,22 +43,19 @@ async function initializeDatabase() {
             }
 
             connection.release();
-            return; // Exit on success
+            return; 
         } catch (err) {
             console.log(`Database connection failed. Retrying... (${i + 1}/10)`);
-            await new Promise(res => setTimeout(res, 5000)); // Wait 5 seconds
+            await new Promise(res => setTimeout(res, 5000));
         }
     }
     console.error("Could not connect to the database after 10 attempts. Exiting.");
     process.exit(1);
 }
 
-// --- Middleware ---
-app.use(express.static(__dirname)); // Serve static files like index.html
+app.use(express.static(__dirname)); 
 
-// --- API Endpoints ---
 
-// GET /poll - Fetches all poll options and their vote counts
 app.get('/poll', async (req, res) => {
     try {
         const [results] = await pool.query('SELECT * FROM polls ORDER BY id');
@@ -76,7 +65,6 @@ app.get('/poll', async (req, res) => {
     }
 });
 
-// POST /vote/:id - Increments the vote count for a given option
 app.post('/vote/:id', async (req, res) => {
     const { id } = req.params;
     try {
@@ -87,7 +75,7 @@ app.post('/vote/:id', async (req, res) => {
     }
 });
 
-// --- Start Server ---
+
 initializeDatabase().then(() => {
     app.listen(PORT, () => {
         console.log(`Polling app server is running on http://localhost:${PORT}`);
